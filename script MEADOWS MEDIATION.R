@@ -2,7 +2,7 @@
 # School of Kinesiology, Auburn University
 # 2016 - 07 - 24
 
-# Analysis script for Caroline Meadows Reward Mediation Paper
+# Analysis script for Caroline Meadow's Reward Mediation Paper
 
 ## -----------------------------------------------------------------------
 # First, make sure you have the following packages installed and then
@@ -10,7 +10,7 @@
 library("ggplot2");library("lme4");library("dplyr");library("lmerTest");
 
 # Make sure that the "data REWARD MASTER.txt" file is saved in your 
-# working directory. In my case, I have "data" folder inside of my 
+# working directory. In my case, I have a "data" folder inside of my 
 # working directory. You will need to update your file path accordingly:
 DATA<-read.table("./data/data REWARD MASTER.txt", header = TRUE, sep="\t") 
 str(DATA)
@@ -20,13 +20,25 @@ head(DATA)
 # Trial = trial number, 168 trials for each subject
 # Reward = the incentive value, in USD, for each trial
 # Reward.nom = categorical version of Reward variable
-# Beta = natural log transform of Beta power. 
+# Beta = natural log transform of Beta power averaged across electrodes. 
 # Time = time of grip force onset in physio data
 # RT = premotor reaction time, defined as time from go signal to EMG peak
 # Max = RMSE recified value for EMG peak
 # Mean = average RMSE-EMG value over the premotor window
 # Stddev = standard deviation of RMSE-EMG value over the premotor window
 # Plaus = Plausibility rating for each subject as a percentage (1.0 = believed incentives)
+
+## The following variables all measure beta power at each electrode independently
+# FC5 = natural log transform of Beta power at electrode FC5.
+# FC3 = natural log transform of Beta power at electrode FC3.
+# FC1 = natural log transform of Beta power at electrode FC1.
+# C5 = natural log transform of Beta power at electrode C5.
+# C3 = natural log transform of Beta power at electrode C3.
+# C1 = natural log transform of Beta power at electrode C1.
+# CP5 = natural log transform of Beta power at electrode CP5.
+# CP3 = natural log transform of Beta power at electrode CP3.
+# CP1 = natural log transform of Beta power at electrode CP1.
+
 
 # Next, we want to remove missing cases for the natural log of beta power 
 # (Beta) and reaction time (RT). We will store the result in a new data 
@@ -74,36 +86,43 @@ plot(density(FILTER$RT))
 FILTER$lnRT<-log(FILTER$RT)
 plot(density(FILTER$lnRT))
 
-#Plotting within subject relationships
-randSub<-subset(FILTER, subID %in% sample(unique(FILTER$subID), size = 9))
+## -----------------------------------------------------------------------
+# Plots
+## Plotting within subject relationships
+set.seed(1)
+randSub<-subset(FILTER, subID %in% sample(unique(FILTER$subID), size = 3))
 
-#Plots of lnRT by Reward.
+## Plots of lnRT by Reward.
 g1<-ggplot(data=randSub, aes(x = Reward, y = lnRT, group = subID))+geom_line()
 g2<-g1+geom_point()+facet_wrap(~subID)+theme(text=element_text(size=20), panel.background=element_rect(fill="white"))
 g3<-g2+geom_smooth(method = "lm", se=TRUE, color="blue", aes(group=subID))
 g4<-g3 + scale_y_continuous(name = "ln(RT)") + scale_x_continuous(name = "Incentives ($)")
 plot(g4)
 
-#Plots of lnRT by Beta.
+## Plots of lnRT by Beta.
 g1<-ggplot(data=randSub, aes(x = Beta, y = lnRT, group = subID))+geom_line()
 g2<-g1+geom_point()+facet_wrap(~subID)+theme(text=element_text(size=20), panel.background=element_rect(fill="white"))
 g3<-g2+geom_smooth(method = "lm", se=TRUE, color="green", aes(group=subID))
 g4<-g3 + scale_y_continuous(name = "ln(RT)") + scale_x_continuous(name = "ln(Beta Power)")
 plot(g4)
 
-#Plots of Beta by Reward.
+## Plots of Beta by Reward.
 g1<-ggplot(data=randSub, aes(x = Reward, y = Beta, group = subID))+geom_line()
 g2<-g1+geom_point()+facet_wrap(~subID)+theme(text=element_text(size=20), panel.background=element_rect(fill="white"))
 g3<-g2+geom_smooth(method = "lm", se=TRUE, color="red", aes(group=subID))
 g4<-g3 + scale_y_continuous(name = "ln(Beta Power)") + scale_x_continuous(name = "Incentives ($)")
 plot(g4)
+###########################################################################
 
 
-#########################################################
+## -----------------------------------------------------------------------
+# Linear Mixed-Effect Regression Models
 # Null Model controlling for the nested nature of the data
 M0<-lmer(lnRT~1+(1|subID),data=FILTER, REML=FALSE)
 summary(M0)
 plot(resid(M0))
+## Note that this random-intercepts model merely establishes a baseline.
+## All critical model comparisons are between random-slopes models.
 
 
 #Unmediated Path C
@@ -118,13 +137,42 @@ anova(M0,M1)
 M2<-lmer(Beta.c~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
 summary(M2)
 
-M2A<-lmer(Beta.c~1+(1|subID),data=FILTER, REML=FALSE)
-summary(M2A)
+####################################################################
+# Unmediated Path A by Electrode
+## There is some concern about averaging across multiple electrodes
+## for our calculation of beta power. Thus, we rerun the same model
+## (M2) at each of the electrodes independently.
+## There are no significant relationships between beta power and 
+## incentive rewards at any of the electrodes.
+FC5<-lmer(FC5~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(FC5)
 
-M2B<-lmer(Beta.c~1+Reward.Nom+(1|subID),data=FILTER, REML=FALSE)
-summary(M2B)
+FC3<-lmer(FC3~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(FC3)
 
-anova(M2A,M2B)
+FC1<-lmer(FC1~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(FC1)
+
+C5<-lmer(C5~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(C5)
+
+C3<-lmer(C3~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(C3)
+
+C1<-lmer(C1~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(C1)
+
+CP5<-lmer(CP5~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(CP5)
+
+CP3<-lmer(CP3~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(CP3)
+
+CP1<-lmer(CP1~1+Reward.c+(1+Reward.c|subID),data=FILTER, REML=FALSE)
+summary(CP1)
+#####################################################################
+
+
 
 # Unmediated Path B
 M3<-lmer(lnRT~1+Beta.c+(1+Beta.c|subID),data=FILTER, REML=FALSE)
@@ -137,8 +185,9 @@ plot(resid(M4))
 plot(density(resid(M4)))
 plot(resid(M4)~fitted(M4))
 
-anova(M0,M1,M4)
-anova(M1,M4) #adding both parameters as a set
+# Model Comparisons
+anova(M1,M4)
+anova(M3,M4) #adding both parameters as a set
 
 # Approximating R-squared based on Verbeke and MolenBerghs (2000)
 SST<-sum(residuals(M0)^2)
@@ -146,7 +195,7 @@ SST
 SSR<-sum(residuals(M4)^2)
 SSR
 r2meta<-1-(SSR/SST)
-r2meta #We explain an incredibly small piece of the variance.
+r2meta
 
 
 # It looks more like Reward and Beta Suppression make independent contributions to RT
@@ -203,7 +252,6 @@ summary(M6)
 
 M7<-lmer(lnRT~1+Reward.c*Beta.c*Plaus.c+(1|subID),data=FILTER2, REML=FALSE)
 summary(M7)
-
 
 
 
