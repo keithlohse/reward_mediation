@@ -247,10 +247,10 @@ FILTER2<-subset(FILTER,!Plaus == 'NA')
 summary(FILTER2$Plaus)
 FILTER2$Plaus.c<-FILTER2$Plaus-0.6044
 
-M6<-lmer(lnRT~1+Reward.c+Beta.c+Plaus.c+(1|subID),data=FILTER2, REML=FALSE)
+M6<-lmer(lnRT~1+Reward.c+Beta.c+Plaus.c+(1+Reward.c+Beta.c|subID),data=FILTER2, REML=FALSE)
 summary(M6)
 
-M7<-lmer(lnRT~1+Reward.c*Beta.c*Plaus.c+(1|subID),data=FILTER2, REML=FALSE)
+M7<-lmer(lnRT~1+Reward.c*Beta.c*Plaus.c+(1+Reward.c+Beta.c|subID),data=FILTER2, REML=FALSE)
 summary(M7)
 
 
